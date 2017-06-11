@@ -339,7 +339,8 @@ Custom property                             | Description                       
         },
         timeOffset: {
           type: Number,
-          value: 0
+          value: 0,
+          observer: '_changeTimeOffset'
         }
       },
 
@@ -615,6 +616,11 @@ Custom property                             | Description                       
         player.$.duration.style.color = newValue;
         player.$.progress.style.backgroundColor = newValue;
         player.$.replay.style.color = newValue;
+      },
+
+      _changeTimeOffset: function(newOffset) {
+        var player = this;
+        player.$.audio.currentTime = newOffset;
       },
 
       _hidePlayIcon: function(isPlaying, canBePlayed){
