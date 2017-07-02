@@ -75,7 +75,7 @@ Custom property                             | Description                       
       }
 
       #right {
-        background-color: rgba(255,255,255,.75);
+        background-color: rgba(0,0,0,.75);
       }
 
       paper-icon-button,
@@ -208,6 +208,21 @@ Custom property                             | Description                       
         align-self: flex-end;
       }
 
+      .buffered {
+        height: 20px;
+        position: relative;
+        background: #555;
+        width: 100%;
+        height: 100%;
+      }
+
+      #bufferedAmount {
+        display: block;
+        height: 100%;
+        background-color: #777;
+        width: 0;
+      }
+
       [hidden] {
         display: none !important;
       }
@@ -243,6 +258,11 @@ Custom property                             | Description                       
 
         <!-- Audio HTML5 element -->
         <audio id="audio" src="{{ src }}" preload="{{ _setPreload(autoPlay, preload) }}"></audio>
+
+        <!-- Buffered bar -->
+        <div class="buffered">
+          <span id="bufferedAmount"></span>
+        </div>
 
         <!-- Progress bar -->
         <div id="progress" class="fit"></div>
@@ -484,11 +504,12 @@ Custom property                             | Description                       
 
             var percentagePlayed = player.currentTime / player.$.audio.duration;
             player._updateVisualProgress(percentagePlayed);
+            player._updateBufferingBar(player.currentTime, player.$.audio.duration);
 
           } else {
             clearInterval(player.timer.sliderUpdateInterval);
           }
-        }, 60);
+        }, 500);
       },
 
       // when Player is paused
@@ -517,6 +538,23 @@ Custom property                             | Description                       
         player.title = 'Sorry, can\'t play track: ' + player.title;
         player.error = true;
         player.setAttribute('aria-invalid', 'true');
+      },
+
+      // handle progress
+      _updateBufferingBar: function(currentTime, duration) {
+        var audio = this.$.audio;
+        var buffered = audio.buffered;
+        var bufferedLength = buffered.length;
+        if (duration > 0) {
+          for (var i = 0; i < bufferedLength; i++) {
+            if (audio.buffered.start(bufferedLength - 1 - i) < currentTime) {
+              var width = (audio.buffered.end(bufferedLength - 1 - i) / duration) * 100 + "%";
+              // console.log('setting buffer width to ', width);
+              this.$.bufferedAmount.style.width = width;
+              break;
+            }
+          }
+        }
       },
 
 
@@ -561,9 +599,10 @@ Custom property                             | Description                       
 
       _updateProgressBar: function(e) {
         var player = this;
+        var duration = player.$.audio.duration;
 
         var x = e.detail.x - player.$.center.getBoundingClientRect().left;
-        var r = (x / player.$.center.getBoundingClientRect().width) * player.$.audio.duration;
+        var r = (x / player.$.center.getBoundingClientRect().width) * duration;
 
         this._updatePlayPosition(r);
       },
@@ -574,9 +613,11 @@ Custom property                             | Description                       
 
       _updatePlayPosition: function(newTime) {
         var player = this;
+        var duration = player.$.audio.duration;
+
         player.currentTime = player.$.audio.currentTime = newTime;
 
-        var percentagePlayed = player.currentTime / player.$.audio.duration;
+        var percentagePlayed = player.currentTime / duration;
         player._updateVisualProgress(percentagePlayed);
       },
 
